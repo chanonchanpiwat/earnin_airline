@@ -1,0 +1,16 @@
+{
+    "priority": 999,
+    "request": {
+        "method": "GET",
+        "url": "/passport"
+    },
+    "response": {
+        "status": 404,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "jsonBody": {
+            "message": "not found."
+        }
+    }
+}

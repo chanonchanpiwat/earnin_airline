@@ -1,0 +1,30 @@
+{
+    "priority": 1,
+    "request": {
+        "method": "GET",
+        "url": "/passport",
+        "bodyPatterns": [
+            {
+                "equalToJson": "{ \"passport_id\": \"BC1500\" }",
+                "ignoreArrayOrder": true,
+                "ignoreExtraElement": true
+            }
+        ]
+    },
+    "response": {
+        "status": 200,
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "jsonBody": {
+            "passport_id": "BC1500",
+            "first_name": "Shauna",
+            "last_name": "Davila"
+        },
+        "delayDistribution": {
+            "type": "lognormal",
+            "median": 80,
+            "sigma": 0.2
+        }
+    }
+}

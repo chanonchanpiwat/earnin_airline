@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: airline
+    volumes:
+      - ./db:/home/scripts
+    ports:
+      - 5432:5432
+
+  passport_api:
+    image: wiremock/wiremock:3.9.1
+    ports:
+      - 8081:8080
+    volumes:
+      - ./passport_api:/home/wiremock
+
+  airline_api_dev:
+    build: .
+    ports: 
+      - 8000:8000
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/airline
+      - PASSPORT_API=http://passport_api:8080
