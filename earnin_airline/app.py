@@ -1,19 +1,27 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 
 from . import dto, timezone
 from .passport import get_passport_detail
 from .db import get_db, EntityNotFound
 
-app = FastAPI()
+router = APIRouter()
+
+
+def create_application() -> FastAPI:
+    app = FastAPI()
+    app.include_router(router)
+    return app
+
+
 db = get_db()
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     return {"service": "api", "healthy": True}
 
 
-@app.get("/flights")
+@router.get("/flights")
 async def list_flight() -> dto.ListFlightsResponse:
     records = db.list_flights()
     return dto.ListFlightsResponse(
@@ -34,7 +42,7 @@ async def list_flight() -> dto.ListFlightsResponse:
     )
 
 
-@app.get("/flights/{flight_id}/passengers")
+@router.get("/flights/{flight_id}/passengers")
 async def list_passengers(flight_id: str):
     passengers = db.list_passengers(flight_id)
     return dto.ListPassengerResponse(
@@ -51,10 +59,11 @@ async def list_passengers(flight_id: str):
     )
 
 
-@app.post("/flights/{flight_id}/passengers")
+@router.post("/flights/{flight_id}/passengers")
 async def create_passenger(
     flight_id: str, create_req: dto.CreateOrUpdatePassengerRequest
 ) -> dto.PassengerResponse:
+    print("post create passenter asdasd \n")
     validate_flight_id(flight_id)
     await validate_passport(create_req)
 
@@ -73,7 +82,7 @@ async def create_passenger(
     )
 
 
-@app.put("/flights/{flight_id}/passengers/{customer_id}")
+@router.put("/flights/{flight_id}/passengers/{customer_id}")
 async def update_passenger(
     flight_id: str, customer_id: int, update_req: dto.CreateOrUpdatePassengerRequest
 ) -> dto.PassengerResponse:
@@ -103,7 +112,7 @@ async def update_passenger(
         )
 
 
-@app.delete("/flights/{flight_id}/passengers/{customer_id}")
+@router.delete("/flights/{flight_id}/passengers/{customer_id}")
 async def delete_passenger(flight_id: str, customer_id: int):
     try:
         db.delete_passenger(flight_id, customer_id)
@@ -133,3 +142,6 @@ def validate_flight_id(flight_id: str):
     db = get_db()
     if not db.does_flight_exists(flight_id):
         raise HTTPException(status_code=404, detail=f"Flight:{flight_id} not found.")
+
+
+app = create_application()
