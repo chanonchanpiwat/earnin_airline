@@ -63,7 +63,6 @@ async def list_passengers(flight_id: str):
 async def create_passenger(
     flight_id: str, create_req: dto.CreateOrUpdatePassengerRequest
 ) -> dto.PassengerResponse:
-    print("post create passenter asdasd \n")
     validate_flight_id(flight_id)
     await validate_passport(create_req)
 
