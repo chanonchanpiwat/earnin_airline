@@ -1,8 +1,9 @@
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, APIRouter
 
 from . import dto, timezone
 from .passport import get_passport_detail
-from .db import get_db, EntityNotFound
+from .db import FlightRecord, get_db, EntityNotFound
 
 router = APIRouter()
 
@@ -21,24 +22,44 @@ async def root():
     return {"service": "api", "healthy": True}
 
 
+def parse_flight(flight: FlightRecord) -> dto.FlightResponse:
+    departure_time, arrival_time = parse_timezone(
+        flight.departure_time,
+        flight.arrival_time,
+        flight.departure_timezone,
+        flight.arrival_timezone,
+    )
+
+    return dto.FlightResponse(
+        id=flight.id,
+        departure_time=departure_time,
+        arrival_time=arrival_time,
+        departure_airport=flight.departure_airport,
+        arrival_airport=flight.arrival_airport,
+    )
+
+
 @router.get("/flights")
 async def list_flight() -> dto.ListFlightsResponse:
     records = db.list_flights()
-    return dto.ListFlightsResponse(
-        flights=[
-            dto.FlightResponse(
-                id=record.id,
-                departure_time=timezone.apply_timezone(
-                    record.departure_time, record.departure_timezone
-                ),
-                arrival_time=timezone.apply_timezone(
-                    record.arrival_time, record.arrival_timezone
-                ),
-                departure_airport=record.departure_airport,
-                arrival_airport=record.arrival_airport,
-            )
-            for record in records
-        ],
+    return dto.ListFlightsResponse(flights=list(map(parse_flight, records)))
+
+
+def parse_timezone(
+    departure_time: datetime,
+    arrival_time: datetime,
+    departure_timezone: str,
+    arrival_timezone: str,
+) -> tuple[datetime, datetime]:
+    if departure_timezone == arrival_timezone:
+        return (
+            timezone.apply_timezone(departure_time, "Asia/Bangkok"),
+            timezone.apply_timezone(arrival_time, "Asia/Bangkok"),
+        )
+
+    return (
+        timezone.apply_timezone(departure_time, "Europe/London"),
+        timezone.apply_timezone(arrival_time, "Asia/Bangkok"),
     )
 
 
