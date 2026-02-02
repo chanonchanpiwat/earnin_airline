@@ -98,7 +98,7 @@ Candidates are required to create a public or private repository (accessible by 
 3. Configure GitHub Actions to run the test suite on each pull request (PR) build as a bonus.
 4. Once completed, **push the code** to your repository.
 5. Send us the **repository link** via email or the designated platform.
-6. Add a description to this file explaining hogithuw to run the test and where to find the test results/report.
+6. Add a description to this file explaining how to run the test and where to find the test results/report.
 
 > **Note**: If your repository is private, ensure to grant access to the provided GitHub account for review.
 
