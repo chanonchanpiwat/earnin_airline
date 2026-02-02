@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from fastapi.testclient import TestClient
 import psycopg2
 import pytest
 from testcontainers.postgres import PostgresContainer
@@ -7,19 +8,13 @@ from testcontainers.core.wait_strategies import LogMessageWaitStrategy
 import yaml
 import logging
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format="[%(asctime)s] %(levelname)s %(name)s — %(message)s",
-)
+from earnin_airline.app import create_application
 
 logger = logging.getLogger("test")
 
 BASE_DIR = Path(__file__).parent.parent
 SCHEMA_PATH = BASE_DIR / "db" / "schema.sql"
 SEED_PATH = BASE_DIR / "db" / "seeds.yml"
-
-def get_seed_data():
-    return yaml.safe_load(SEED_PATH.read_text())
 
 
 class TestDBConfig:
@@ -52,8 +47,49 @@ postgres = PostgresContainer(
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def setup(request):
+    postgres.start()
+
+    def remove_container():
+        postgres.stop()
+
+    request.addfinalizer(remove_container)
+
+    init_schema()
+    seed_data()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def clean_up():
+    clear_up_passenger()
+
+
+logging.basicConfig(
+    level=logging.ERROR,
+    format="[%(asctime)s] %(levelname)s %(name)s — %(message)s",
+)
+
+
 def get_connection():
     return psycopg2.connect(**TestDBConfig.get_connection_params())
+
+
+def get_seed_data():
+    return yaml.safe_load(SEED_PATH.read_text())
+
+
+def init_schema():
+    sql = SCHEMA_PATH.read_text()
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+            conn.commit()
+
+    except Exception as e:
+        logger.error(f"[SCHEMA ERROR] Failed executing schema SQL error: {e}")
+        raise
 
 
 def seed_data():
@@ -88,39 +124,13 @@ def seed_data():
         raise
 
 
-@pytest.fixture(scope="module", autouse=True)
-def setup(request):
-    postgres.start()
-
-    def remove_container():
-        postgres.stop()
-
-    request.addfinalizer(remove_container)
-
-    init_schema()
-    seed_data()
-
-
-def init_schema():
-    sql = SCHEMA_PATH.read_text()
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql)
-            conn.commit()
-
-    except Exception as e:
-        logger.error(f"[SCHEMA ERROR] Failed executing schema SQL error: {e}")
-        raise
-
-
-@pytest.fixture(scope="function", autouse=True)
-def clean_up():
-    clear_up_passenger()
-
-
 def clear_up_passenger():
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("TRUNCATE TABLE customers, passengers;")
+            cur.execute(
+                "TRUNCATE TABLE passengers, customers RESTART IDENTITY CASCADE;"
+            )
             conn.commit()
+
+
+client = TestClient(create_application())
