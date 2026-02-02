@@ -13,4 +13,4 @@ docker-up:
 	docker compose -f docker-compose-ci.yml up -d
 
 test:
-	uv run pytest -sv
+	uv run pytest --html=report.html --self-contained-html -sv
