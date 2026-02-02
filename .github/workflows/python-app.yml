@@ -50,4 +50,4 @@ jobs:
           report_paths: pytest-report.xml
           check_name: Pytest Results
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
