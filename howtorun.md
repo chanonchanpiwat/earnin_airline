@@ -40,7 +40,7 @@ make init
 
 # 🐳 Step 2 — Start Containers
 
-Start required services (PostgreSQL, etc.):
+Start required services (PostgreSQL, etc.) [is required for both testing and running service locally]:
 
 ```bash
 make docker-up
@@ -66,6 +66,7 @@ docker compose exec -it postgres bash -c "/home/scripts/exec_sql.sh schema.sql"
 
 # 🧪 Step 4 — Run Tests
 
+tests file is located under tests
 Run the full test suite:
 
 ```bash
