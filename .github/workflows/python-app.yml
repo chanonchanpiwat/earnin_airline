@@ -49,5 +49,6 @@ jobs:
         with:
           report_paths: pytest-report.xml
           check_name: Pytest Results
+          include_passed: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
