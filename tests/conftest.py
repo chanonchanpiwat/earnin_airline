@@ -1,8 +1,20 @@
 import os
+from pathlib import Path
+from fastapi.testclient import TestClient
 import psycopg2
 import pytest
 from testcontainers.postgres import PostgresContainer
 from testcontainers.core.wait_strategies import LogMessageWaitStrategy
+import yaml
+import logging
+
+from earnin_airline.app import create_application
+
+logger = logging.getLogger("test")
+
+BASE_DIR = Path(__file__).parent.parent
+SCHEMA_PATH = BASE_DIR / "db" / "schema.sql"
+SEED_PATH = BASE_DIR / "db" / "seeds.yml"
 
 
 class TestDBConfig:
@@ -21,76 +33,6 @@ class TestDBConfig:
             "password": cls.PASSWORD,
             "dbname": cls.DATABASE,
         }
-
-
-def get_connection():
-    return psycopg2.connect(**TestDBConfig.get_connection_params())
-
-
-def init_db():
-    schemas = [
-        """CREATE TABLE IF NOT EXISTS flights (
-            id                 VARCHAR(8)  PRIMARY KEY,
-            departure_time     TIMESTAMP   NOT NULL,
-            arrival_time       TIMESTAMP   NOT NULL,
-            departure_airport  VARCHAR(3)  NOT NULL,
-            arrival_airport    VARCHAR(3)  NOT NULL,
-            departure_timezone VARCHAR(30) NOT NULL,
-            arrival_timezone   VARCHAR(30) NOT NULL
-        );""",
-        """CREATE TABLE IF NOT EXISTS customers (
-            id          SERIAL       PRIMARY KEY,
-            passport_id VARCHAR(20)  NOT NULL UNIQUE,
-            first_name  VARCHAR(50)  NOT NULL,
-            last_name   VARCHAR(50)  NOT NULL
-        );""",
-        """
-        CREATE UNIQUE INDEX IF NOT EXISTS customers__passport_id_idx
-            ON customers (passport_id);
-        """,
-        """CREATE TABLE IF NOT EXISTS passengers (
-            flight_id   VARCHAR(8) NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
-            customer_id INT        NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-            PRIMARY KEY (flight_id, customer_id)
-        );""",
-    ]
-
-    try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                for statement in schemas:
-                    cur.execute(statement)
-
-                seed_flight = (
-                    "AAA01",
-                    "2024-12-01 00:00:00",
-                    "2024-12-01 02:00:00",
-                    "DMK",
-                    "HYD",
-                    "Asia/Bangkok",
-                    "Asia/Bangkok",
-                )
-
-                cur.execute(
-                    """
-                    INSERT INTO flights (id, departure_time, arrival_time, departure_airport, 
-                                         arrival_airport, departure_timezone, arrival_timezone)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (id) DO NOTHING;
-                """,
-                    seed_flight,
-                )
-
-            conn.commit()
-    except Exception as e:
-        print(f"Unable to initialize Test Database initialize error: {e}")
-
-
-def clear_db():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("TRUNCATE TABLE customers, passengers;")
-            conn.commit()
 
 
 postgres = PostgresContainer(
@@ -114,9 +56,81 @@ def setup(request):
 
     request.addfinalizer(remove_container)
 
-    init_db()
+    init_schema()
+    seed_data()
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup_data():
-    clear_db()
+def clean_up():
+    clear_up_passenger()
+
+
+logging.basicConfig(
+    level=logging.ERROR,
+    format="[%(asctime)s] %(levelname)s %(name)s — %(message)s",
+)
+
+
+def get_connection():
+    return psycopg2.connect(**TestDBConfig.get_connection_params())
+
+
+def get_seed_data():
+    return yaml.safe_load(SEED_PATH.read_text())
+
+
+def init_schema():
+    sql = SCHEMA_PATH.read_text()
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+            conn.commit()
+
+    except Exception as e:
+        logger.error(f"[SCHEMA ERROR] Failed executing schema SQL error: {e}")
+        raise
+
+
+def seed_data():
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                for f in yaml.safe_load(SEED_PATH.read_text()).get("flights", []):
+                    cur.execute(
+                        """
+                        INSERT INTO flights
+                        (id, departure_time, arrival_time,
+                         departure_airport, arrival_airport,
+                         departure_timezone, arrival_timezone)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s)
+                        ON CONFLICT (id) DO NOTHING;
+                        """,
+                        (
+                            f["id"],
+                            f["departure_time"],
+                            f["arrival_time"],
+                            f["departure_airport"],
+                            f["arrival_airport"],
+                            f["departure_timezone"],
+                            f["arrival_timezone"],
+                        ),
+                    )
+
+            conn.commit()
+
+    except Exception as e:
+        logger.error(f"[SEED ERROR] Failed inserting seed data: {e}")
+        raise
+
+
+def clear_up_passenger():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "TRUNCATE TABLE passengers, customers RESTART IDENTITY CASCADE;"
+            )
+            conn.commit()
+
+
+client = TestClient(create_application())
