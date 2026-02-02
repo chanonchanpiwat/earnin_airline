@@ -44,6 +44,10 @@ def init_db():
             first_name  VARCHAR(50)  NOT NULL,
             last_name   VARCHAR(50)  NOT NULL
         );""",
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS customers__passport_id_idx
+            ON customers (passport_id);
+        """,
         """CREATE TABLE IF NOT EXISTS passengers (
             flight_id   VARCHAR(8) NOT NULL REFERENCES flights(id) ON DELETE CASCADE,
             customer_id INT        NOT NULL REFERENCES customers(id) ON DELETE CASCADE,

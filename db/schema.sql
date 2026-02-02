@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS customers (
     last_name VARCHAR(50) NOT NULL
 );
 
-CREATE UNIQUE INDEX IF EXISTS customers__passport_id_idx ON customers (passport_id);
+CREATE UNIQUE INDEX IF NOT EXISTS customers__passport_id_idx
+ON customers (passport_id);
 
 
 CREATE TABLE IF NOT EXISTS passengers (
