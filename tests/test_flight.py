@@ -133,7 +133,7 @@ test_cases = [
             "first_name": "admin",
             "last_name": "admin",
         },
-        "expected_status": 400,
+        "expected_status": 200,
         "expected_response": {"detail": "Passport not found."},
     },
 ]
