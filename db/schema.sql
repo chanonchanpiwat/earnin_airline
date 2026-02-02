@@ -27,5 +27,3 @@ CREATE TABLE IF NOT EXISTS passengers (
     PRIMARY KEY (flight_id, customer_id)
 );
 
-
-INSERT INTO flights VALUES('AAA01', '2024-12-01T00:00:00Z', '2024-12-01T02:00:00Z', 'DMK', 'HYD', 'Asia/Bangkok', 'Asia/Bangkok')

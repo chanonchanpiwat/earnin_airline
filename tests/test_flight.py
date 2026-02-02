@@ -1,27 +1,81 @@
+from zoneinfo import ZoneInfo
 import pytest
 from fastapi.testclient import TestClient
 
 from earnin_airline.app import create_application
+from tests.conftest import get_seed_data
 
+from datetime import datetime
 
 client = TestClient(create_application())
 
 
+def assert_flight(actual, raw_data):
+    expected_departure_time, expected_arrival_time = parse_expected_flight_time(
+        raw_data
+    )
+
+    assert actual["id"] == raw_data["id"]
+    assert actual["departure_airport"] == raw_data["departure_airport"]
+    assert actual["arrival_airport"] == raw_data["arrival_airport"]
+    assert datetime.fromisoformat(actual["departure_time"]) == expected_departure_time
+    assert datetime.fromisoformat(actual["arrival_time"]) == expected_arrival_time
+
+
+def parse_expected_flight_time(flight_data):
+    """
+    given flight
+    - same timezone for departure and arrival then both time will be converted to Asia/Bangkok timezone
+    - different timezone for departure and arrival then departure time will be converted to Europe/London timezone and arrival time will be converted to Asia/Bangkok timezone
+    """
+    departure_timezone, arrival_timezone, raw_departure_time, raw_arrival_time = (
+        flight_data["departure_timezone"],
+        flight_data["arrival_timezone"],
+        flight_data["departure_time"],
+        flight_data["arrival_time"],
+    )
+
+    if departure_timezone == arrival_timezone:
+        expected_departure_time = (
+            datetime.fromisoformat(raw_departure_time)
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo("Asia/Bangkok"))
+        )
+
+        expected_arrival_time = (
+            datetime.fromisoformat(raw_arrival_time)
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo("Asia/Bangkok"))
+        )
+    else:
+        expected_departure_time = (
+            datetime.fromisoformat(raw_departure_time)
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo("Europe/London"))
+        )
+
+        expected_arrival_time = (
+            datetime.fromisoformat(raw_arrival_time)
+            .replace(tzinfo=ZoneInfo("UTC"))
+            .astimezone(ZoneInfo("Asia/Bangkok"))
+        )
+
+    return expected_departure_time, expected_arrival_time
+
+
+def assert_flights(actual, raw_data):
+    assert len(actual["flights"]) == len(raw_data["flights"])
+    for actual_flight, raw_flight_data in zip(actual["flights"], raw_data["flights"]):
+        assert_flight(actual_flight, raw_flight_data)
+
+
 def test_get_flights():
+    seed_flights_data = get_seed_data()
+
     response = client.get("/flights")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "flights": [
-            {
-                "id": "AAA01",
-                "departure_time": "2024-12-01T07:00:00+07:00",
-                "arrival_time": "2024-12-01T09:00:00+07:00",
-                "departure_airport": "DMK",
-                "arrival_airport": "HYD",
-            }
-        ]
-    }
+    assert_flights(response.json(), seed_flights_data)
 
 
 test_cases = [
@@ -185,7 +239,7 @@ def get_passengers_by_flight(flight_id):
     assert response.status_code == 200, (
         "Setup failed: Could not get passengers by flight"
     )
-    return response.json()['passengers']
+    return response.json()["passengers"]
 
 
 @pytest.mark.parametrize("test_case", test_cases, ids=lambda tc: tc["name"])

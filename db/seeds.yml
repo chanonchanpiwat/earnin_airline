@@ -1,0 +1,16 @@
+flights:
+  - id: AAA01
+    departure_time: "2024-12-01 00:00:00"
+    arrival_time: "2024-12-01 02:00:00"
+    departure_airport: DMK
+    arrival_airport: HYD
+    departure_timezone: Asia/Bangkok
+    arrival_timezone: Asia/Bangkok
+
+  - id: BBB02
+    departure_time: "2024-12-02 03:00:00"
+    arrival_time: "2024-12-02 05:00:00"
+    departure_airport: BKK
+    arrival_airport: SIN
+    departure_timezone: Asia/Bangkok
+    arrival_timezone: Asia/Singapore
