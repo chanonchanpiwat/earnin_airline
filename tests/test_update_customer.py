@@ -1,6 +1,7 @@
 import pytest
 from tests.conftest import client
-from tests.utils import assert_subset, get_passenger
+from tests.test_book_flight import assert_passenger_information
+from tests.utils import get_passenger
 
 test_cases = [
     {
@@ -18,8 +19,8 @@ test_cases = [
         },
         "expected_status": 200,
         "expected_response": {
-            'customer_id': 1,
-            'flight_id': 'AAA01',
+            "customer_id": 1,
+            "flight_id": "AAA01",
             "first_name": "admin",
             "last_name": "admin",
             "passport_id": "BC1501",
@@ -55,7 +56,7 @@ test_cases = [
             "last_name": "admin",
         },
         "expected_status": 400,
-        "expected_response": {'detail': 'Firstname or Lastname is mismatch.'},
+        "expected_response": {"detail": "Firstname or Lastname is mismatch."},
     },
     {
         "name": "given customer with invalid last name, should not be able to update passenger",
@@ -71,7 +72,7 @@ test_cases = [
             "last_name": "invalid_last_name",
         },
         "expected_status": 400,
-        "expected_response": {'detail': 'Firstname or Lastname is mismatch.'},
+        "expected_response": {"detail": "Firstname or Lastname is mismatch."},
     },
 ]
 
@@ -110,4 +111,4 @@ def test_update_passenger(test_case):
         assert updated_passenger is not None, "Updated passenger not found"
 
         # passenger updated should have correct information
-        assert_subset(updated_passenger, expected_response, "Passenger")
+        assert_passenger_information(updated_passenger, expected_response)
