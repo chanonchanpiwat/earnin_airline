@@ -1,6 +1,5 @@
 import pytest
 from tests.conftest import client
-from tests.test_book_flight import assert_passenger_information
 from tests.utils import assert_subset, get_passenger
 
 test_cases = [
@@ -43,7 +42,7 @@ test_cases = [
         "expected_response": {"detail": "Passport not found."},
     },
     {
-        "name": "given valid customer and flight, should be able to update passenger",
+        "name": "given customer with invalid first name, should not be able to update passenger",
         "flight": "AAA01",
         "customer": {
             "passport_id": "BC1500",
@@ -54,6 +53,22 @@ test_cases = [
             "passport_id": "BC1501",
             "first_name": "invalid_first_name",
             "last_name": "admin",
+        },
+        "expected_status": 400,
+        "expected_response": {'detail': 'Firstname or Lastname is mismatch.'},
+    },
+    {
+        "name": "given customer with invalid last name, should not be able to update passenger",
+        "flight": "AAA01",
+        "customer": {
+            "passport_id": "BC1500",
+            "first_name": "Shauna",
+            "last_name": "Davila",
+        },
+        "new_passenger": {
+            "passport_id": "BC1501",
+            "first_name": "admin",
+            "last_name": "invalid_last_name",
         },
         "expected_status": 400,
         "expected_response": {'detail': 'Firstname or Lastname is mismatch.'},

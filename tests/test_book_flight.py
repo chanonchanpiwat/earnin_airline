@@ -23,10 +23,10 @@ test_cases = [
         },
     },
     {
-        "name": "given customer with missing first_name, should not be able to create passenger",
+        "name": "given customer with invalid first_name, should not be able to create passenger",
         "customer": {
             "passport_id": "BC1500",
-            "first_name": "Invalid_Name",
+            "first_name": "invalid_first_name",
             "last_name": "Davila",
         },
         "flight_id": "AAA01",
@@ -34,11 +34,11 @@ test_cases = [
         "expected_response": {"detail": "Firstname or Lastname is mismatch."},
     },
     {
-        "name": "given customer with missing last_name, should not be able to create passenger",
+        "name": "given customer with invalid last_name, should not be able to create passenger",
         "customer": {
             "passport_id": "BC1500",
             "first_name": "Shauna",
-            "last_name": "Invalid_last_name",
+            "last_name": "invalid_last_name",
         },
         "flight_id": "AAA01",
         "expected_status": 400,
@@ -47,7 +47,7 @@ test_cases = [
     {
         "name": "given customer with invalid passport, should not be able to create passenger",
         "customer": {
-            "passport_id": "XY9999",
+            "passport_id": "invalid_passport",
             "first_name": "John",
             "last_name": "Dean",
         },
