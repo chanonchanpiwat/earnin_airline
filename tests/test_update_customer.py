@@ -19,6 +19,8 @@ test_cases = [
         },
         "expected_status": 200,
         "expected_response": {
+            'customer_id': 1,
+            'flight_id': 'AAA01',
             "first_name": "admin",
             "last_name": "admin",
             "passport_id": "BC1501",
@@ -33,12 +35,28 @@ test_cases = [
             "last_name": "Davila",
         },
         "new_passenger": {
-            "passport_id": "invalid_BC1501",
+            "passport_id": "invalid_passport",
             "first_name": "admin",
             "last_name": "admin",
         },
         "expected_status": 400,
         "expected_response": {"detail": "Passport not found."},
+    },
+    {
+        "name": "given valid customer and flight, should be able to update passenger",
+        "flight": "AAA01",
+        "customer": {
+            "passport_id": "BC1500",
+            "first_name": "Shauna",
+            "last_name": "Davila",
+        },
+        "new_passenger": {
+            "passport_id": "BC1501",
+            "first_name": "invalid_first_name",
+            "last_name": "admin",
+        },
+        "expected_status": 400,
+        "expected_response": {'detail': 'Firstname or Lastname is mismatch.'},
     },
 ]
 
@@ -69,11 +87,12 @@ def test_update_passenger(test_case):
     )
 
     assert response.status_code == expected_status, "Status code mismatch"
-    assert_passenger_information(response.json(), expected_response)
-    
+    assert response.json() == expected_response, "Response body mismatch"
+
     if expected_status == 200:
         # verify passenger is updated
         updated_passenger = get_passenger(flight_id, customer_id)
+        assert updated_passenger is not None, "Updated passenger not found"
 
         # passenger updated should have correct information
         assert_subset(updated_passenger, expected_response, "Passenger")
