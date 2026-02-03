@@ -18,14 +18,6 @@ test_cases = [
 ]
 
 
-def get_passengers_by_flight(flight_id):
-    response = client.get(f"/flights/{flight_id}/passengers")
-    assert response.status_code == 200, (
-        "Setup failed: Could not get passengers by flight"
-    )
-    return response.json()["passengers"]
-
-
 @pytest.mark.parametrize("test_case", test_cases, ids=lambda tc: tc["name"])
 def test_delete_passenger(test_case):
     flight_id, customer, expected_status, expected_response = (
@@ -42,9 +34,9 @@ def test_delete_passenger(test_case):
 
     assert response.status_code == expected_status
     assert response.json() == expected_response
-    
+
     # verify passenger is deleted
-    get_passenger_response = get_passenger(flight_id, customer_id)
-    assert get_passenger_response is None, (
-        f"Expected passenger to be deleted but got response: {get_passenger_response}"
+    passenger = get_passenger(flight_id, customer_id)
+    assert passenger is None, (
+        f"Expected passenger to be deleted but got response: {passenger}"
     )
